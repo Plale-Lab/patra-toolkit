@@ -2,6 +2,11 @@
 .venv/
 __pycache__/
 *.egg-info
+dist/
+build/
 examples/notebooks/data/
 examples/notebooks/runs/
 examples/notebooks/yolov5/
+examples/notebooks/ckn_producer/
+examples/notebooks/ckn_demo_images/
+examples/notebooks/*.pth
