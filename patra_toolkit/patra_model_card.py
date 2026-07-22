@@ -1,28 +1,16 @@
 import json
 import logging
 import os.path
-import tempfile
 from dataclasses import dataclass, field
 from json import JSONEncoder
-from typing import List, Optional, Dict
-from urllib.parse import urlparse, urlunparse
+import dataclasses
+from typing import List, Optional, Dict, Union
 
 import jsonschema
 import requests
 
-# Use importlib.metadata for Python 3.8+ compatibility, fallback to pkg_resources for older versions
-try:
-    from importlib.metadata import distributions
-    _HAS_IMPORTLIB_METADATA = True
-except ImportError:
-    try:
-        import pkg_resources
-        _HAS_IMPORTLIB_METADATA = False
-    except ImportError:
-        raise ImportError("Neither importlib.metadata nor pkg_resources is available")
-
-from .exceptions import PatraIDGenerationError
-from .model_store import get_model_store, ensure_package_installed
+from . import client
+from .exceptions import PatraModelExistsError, PatraSubmissionError
 # BiasAnalyzer and ExplainabilityAnalyser are imported lazily when needed
 
 SCHEMA_JSON = os.path.join(os.path.dirname(__file__), 'schema', 'schema.json')
@@ -56,9 +44,10 @@ class AIModel:
         license (str): The license under which the model is distributed.
         framework (str): The framework used to build the model (e.g., TensorFlow, PyTorch).
         model_type (str): The type of model (e.g., classifier, regressor).
-        test_accuracy (str): The accuracy of the model on a test dataset.
-        model_structure (str): The structure of the model as a dictionary (optional).
-        metrics (str): A dictionary storing performance metrics for the model.
+        test_accuracy (float): The accuracy of the model on a test dataset.
+        inference_labels (List[str]): Inference labels for the AI model.
+        model_structure (object): The structure of the model as a dictionary (optional).
+        model_metrics (dict): A dictionary storing performance metrics for the model.
 
     Example:
         .. code-block:: python
@@ -70,38 +59,38 @@ class AIModel:
                 owner="Model owner",
                 location="Model location",
                 license="Model license",
-                framework="Model framework",
-                model_type="Model type",
+                framework="tensorflow",
+                model_type="dnn",
                 test_accuracy=0.95,
                 model_structure={},
-                metrics={"accuracy": "0.95"}
+                model_metrics={"accuracy": 0.95}
             )
     """
     name: str
-    version: str
-    description: str
-    owner: str
-    location: str
-    license: str
-    framework: str
-    model_type: str
-    test_accuracy: float
-    inference_labels: Optional[str] = ""
+    version: Optional[str] = ""
+    description: Optional[str] = ""
+    owner: Optional[str] = ""
+    location: Optional[str] = ""
+    license: Optional[str] = ""
+    framework: Optional[str] = None
+    model_type: Optional[str] = None
+    test_accuracy: Optional[float] = 0.0
+    inference_labels: List[str] = field(default_factory=list)
     model_structure: Optional[object] = field(default_factory=dict)
-    metrics: Dict[str, str] = field(default_factory=dict)
+    model_metrics: Dict[str, Union[str, int, float, bool, None]] = field(default_factory=dict)
 
-    def add_metric(self, key: str, value: str) -> None:
+    def add_metric(self, key: str, value) -> None:
         """
         Adds a performance metric to the model's metrics.
 
         Args:
             key (str): The name of the metric.
-            value (str): The value of the metric.
+            value: The value of the metric.
 
         Returns:
             None
         """
-        self.metrics[key] = value
+        self.model_metrics[key] = value
 
     def remove_nulls(self, model_structure):
         """
@@ -165,27 +154,29 @@ class ExplainabilityAnalysis:
 @dataclass
 class ModelCard:
     """
-    Represents a documented model card containing metadata, analyses, and requirements
-    for an AI model. It includes fields for describing the model, performing bias and
-    explainability analyses, and validating schema compliance.
+    Represents a documented model card containing metadata and analyses for an AI model.
 
     Args:
         name (str): The name of the model card.
-        version (str): The model card's version.
-        short_description (str): A brief description of the model card.
-        full_description (str): A comprehensive description of the model card.
-        keywords (str): Comma-separated keywords for searchability.
-        author (str): The model's creator or owner.
-        input_type (str): Type of input data (e.g., "Image", "Text").
-        category (str): The category of the model (e.g., "Classification", "Regression").
+        version (Optional[str]): The model card's version.
+        short_description (Optional[str]): A brief description of the model card.
+        full_description (Optional[str]): A comprehensive description of the model card.
+        keywords (Optional[str]): Comma-separated keywords for searchability.
+        author (Optional[str]): The model's creator or owner.
+        input_type (Optional[str]): Type of input data (e.g., "Image", "Text").
+        category (Optional[str]): The category of the model (e.g., "classification", "regression").
+        citation (Optional[str]): Citation information for the model card.
         input_data (Optional[str]): Description of the model's input data.
         output_data (Optional[str]): Description of the model's output data.
         foundational_model (Optional[str]): Reference to any foundational model used.
-        ai_model (Optional[object]): Reference to an `AIModel` instance containing model details.
+        documentation (Optional[str]): URL for documentation if available.
+        training_datasheet_uuid (Optional[str]): UUID of a Datasheet used to train the model.
+        is_private (bool): Whether the model card is private.
+        is_gated (bool): Whether the model card is gated.
+        ai_model (Optional[AIModel]): Reference to an `AIModel` instance containing model details.
         bias_analysis (Optional[object]): Reference to a `BiasAnalysis` instance containing bias metrics.
         xai_analysis (Optional[object]): Reference to an `ExplainabilityAnalysis` instance with interpretability metrics.
-        model_requirements (Optional[List[str]]): List of required packages and dependencies.
-        id (Optional[str]): Unique identifier for the model card, generated upon submission.
+        uuid (Optional[str]): Unique identifier for the model card, assigned upon submission.
 
     Example:
         .. code-block:: python
@@ -198,7 +189,7 @@ class ModelCard:
                 keywords="classification, AI, image processing",
                 author="Author Name",
                 input_type="Image",
-                category="Classification",
+                category="classification",
                 input_data="Images of size 28x28.",
                 output_data="Prediction probabilities for classes.",
                 foundational_model="Base Model Reference",
@@ -209,40 +200,34 @@ class ModelCard:
                     owner="Model owner",
                     location="Storage location",
                     license="MIT",
-                    framework="TensorFlow",
-                    model_type="Classifier",
+                    framework="tensorflow",
+                    model_type="dnn",
                     test_accuracy=0.95,
                     model_structure={},
-                    metrics={"accuracy": "0.95"}
-                ),
-                bias_analysis=BiasAnalysis(
-                    demographic_parity_difference=0.05,
-                    equal_odds_difference=0.1
-                ),
-                xai_analysis=ExplainabilityAnalysis(
-                    name="SHAP",
-                    metrics=[Metric(key="Feature A", value="0.1")]
-                ),
-                model_requirements=["numpy>=1.19.2", "tensorflow>=2.4.1"]
+                    model_metrics={"accuracy": 0.95}
+                )
             )
     """
     name: str
-    version: str
-    short_description: str
-    full_description: str
-    keywords: str
-    author: str
-    input_type: str
-    category: str
+    version: Optional[str] = ""
+    short_description: Optional[str] = ""
+    full_description: Optional[str] = ""
+    keywords: Optional[str] = ""
+    author: Optional[str] = ""
+    input_type: Optional[str] = ""
+    category: Optional[str] = None
     citation: Optional[str] = ""
     input_data: Optional[str] = ""
     output_data: Optional[str] = ""
     foundational_model: Optional[str] = ""
-    ai_model: Optional[object] = None
+    documentation: Optional[str] = ""
+    training_datasheet_uuid: Optional[str] = None
+    is_private: bool = False
+    is_gated: bool = False
+    ai_model: Optional[AIModel] = None
     bias_analysis: Optional[object] = None
     xai_analysis: Optional[object] = None
-    model_requirements: Optional[List[str]] = None
-    id: Optional[str] = field(init=False, default=None)
+    uuid: Optional[str] = None
 
     def __str__(self) -> str:
         """
@@ -276,7 +261,7 @@ class ModelCard:
             raise ImportError(
                 "Fairlearn is not installed. Install it with: pip install patra-toolkit[fairness]"
             )
-        
+
         bias_analyzer = BiasAnalyzer(dataset, true_labels, predicted_labels, sensitive_feature_name,
                                      sensitive_feature_data, model)
         self.bias_analysis = bias_analyzer.calculate_bias_metrics()
@@ -302,29 +287,9 @@ class ModelCard:
             raise ImportError(
                 "SHAP is not installed. Install it with: pip install patra-toolkit[xai]"
             )
-        
+
         xai_analyzer = ExplainabilityAnalyser(train_dataset, column_names, model)
         self.xai_analysis = xai_analyzer.calculate_xai_features(n_features)
-
-    def populate_requirements(self) -> None:
-        """
-        Gathers package requirements for the model card, excluding certain dependencies.
-        """
-        exclude_packages = {"shap", "fairlearn"}
-        
-        if _HAS_IMPORTLIB_METADATA:
-            # Use importlib.metadata for Python 3.8+
-            installed_packages = distributions()
-            packages_list = sorted([f"{pkg.metadata['Name']}=={pkg.version}" for pkg in installed_packages if pkg.metadata['Name']])
-        else:
-            # Fallback to pkg_resources for older Python versions
-            installed_packages = pkg_resources.working_set
-            packages_list = sorted([f"{pkg.key}=={pkg.version}" for pkg in installed_packages])
-        
-        self.model_requirements = [
-            pkg for pkg in packages_list
-            if pkg.split("==")[0] not in exclude_packages
-        ]
 
     def validate(self) -> bool:
         """
@@ -392,303 +357,89 @@ class ModelCard:
         except IOError as io_err:
             logging.error(f"Failed to save model card: {io_err}")
 
-    def submit(
-            self,
-            patra_server_url: str,
-            token: Optional[str] = None,
-            model: Optional[object] = None,
-            file_format: Optional[str] = "h5",
-            model_store: Optional[str] = "huggingface",
-            inference_labels: Optional[str] = None,
-            artifacts: Optional[List[str]] = None
-    ):
+    def submit(self, patra_server_url: str, token: Optional[str] = None) -> dict:
         """
-        Submits the model card to the Patra server, optionally uploading the model and artifacts.
+        Submits the model card to the Patra server.
 
         Args:
             patra_server_url (str): The URL of the Patra server.
-            token (str): The access token for authentication.
-            model (object): The trained model to be uploaded.
-            file_format (str): The format in which the model will be saved (default: "h5").
-            model_store (str): The model store to use for uploading the model (default: "huggingface").
-            inference_labels (str): The inference labels to be uploaded.
-            artifacts (List[str]): List of artifacts to be uploaded.
+            token (Optional[str]): The X-Tapis-Token access token for authentication.
 
         Returns:
-            str: "success" if the submission is successful, None otherwise.
+            dict: The server's ingest result (asset_type, asset_id, asset_uuid, organization,
+            created, duplicate).
+
+        Raises:
+            PatraSubmissionError: If validation fails, the server is unreachable, or the
+                server returns an error other than a duplicate.
+            PatraModelExistsError: If an equivalent model card already exists on the server.
 
         Example:
             .. code-block:: python
 
                 model_card.submit(
-                    patra_server_url="http://localhost:5002",
-                    token="access_token",
-                    model=model,
-                    file_format="h5",
-                    model_store="huggingface",
-                    inference_labels="inference_label.json",
-                    artifacts=["requirements.txt", "README.md"]
+                    patra_server_url="http://localhost:8000",
+                    token="access_token"
                 )
         """
-        # Validate the model card before submission
         if not self.validate():
-            logging.error("ModelCard validation failed.")
-            return None
+            raise PatraSubmissionError("ModelCard validation failed; see log for details.")
 
-        # Retrieve model ID from the Patra server
-        is_uploading_model = (model is not None)
-        try:
-            self.id = self._get_model_id(patra_server_url, token, is_uploading_model)
-            logging.info(f"PID created: {self.id}")
-            # Update author in the model card to the authenticated user
-            # self.author = self.id.split("-")[0]
-        except PatraIDGenerationError as pid_exc:
-            logging.error(f"Model submission failed during model ID creation: {pid_exc}")
-            return None
-        except Exception as e:
-            logging.error(f"Model submission failed during model ID creation: {e}")
-            return None
+        payload = json.loads(str(self))
+        # bias_analysis/xai_analysis are kept locally for populate_bias()/populate_xai()
+        # but the backend's schema doesn't persist them, so they must not be sent.
+        payload.pop("bias_analysis", None)
+        payload.pop("xai_analysis", None)
 
-        # Upload model, inference labels, and artifacts if requested
-        model_upload_location = None
-        inference_url = None
-        artifact_locations = []
-        upload_requested = any([model, inference_labels, artifacts])
+        result = client.submit_model_card(patra_server_url, payload, token=token)
+        self.uuid = result.get("asset_uuid")
+        return result
 
-        if upload_requested:
-            # Retrieve credentials for model upload
-            try:
-                creds = self._get_credentials(patra_server_url, token, model_store)
-                credentials = {"token": creds.get("token"), "username": creds.get("username")}
-            except Exception as e:
-                logging.error(f"Model submission failed during credential retrieval: {e}")
-                return None
-
-            # Serialize and upload the model
-            if model is not None:
-                try:
-                    if file_format.lower() == "h5":
-                        ensure_package_installed("tensorflow")
-                    elif file_format.lower() in ["pt", "onnx"]:
-                        ensure_package_installed("torch")
-                    serialized_model = self._serialize_model(model, file_format)
-                except Exception as e:
-                    logging.error(f"Model submission failed during model serialization: {e}")
-                    return None
-
-                # Upload the model to the specified model store
-                backend = get_model_store(model_store.lower())
-                try:
-                    model_upload_location = backend.upload(serialized_model, self.id, credentials)
-                    logging.info(f"Model uploaded at: {model_upload_location}")
-                    self.ai_model.location = model_upload_location
-                    self.output_data = self._extract_repository_link(model_upload_location, model_store)
-
-                    model_card_location = os.path.join(tempfile.gettempdir(), "model_card.json")
-                    self.save(model_card_location)
-                    model_card_upload_location = backend.upload(model_card_location, self.id, credentials)
-                    logging.info(f"Model card uploaded at: {model_card_upload_location}")
-
-                    readme_content = f"# Model Card available at: {model_card_upload_location}"
-                    readme_path = os.path.join(tempfile.gettempdir(), "README.md")
-                    with open(readme_path, 'w', encoding='utf-8') as readme_file:
-                        readme_file.write(readme_content)
-                    readme_upload_location = backend.upload(readme_path, self.id, credentials)
-
-                except Exception as e:
-                    logging.error(f"Model submission failed during model upload: {e}")
-                    try:
-                        backend.delete_repo(self.id, credentials)
-                        logging.info("Rollback successful: repository deleted.")
-                    except Exception as rollback_err:
-                        logging.error(f"Rollback failed: {rollback_err}")
-                    return None
-
-            # Upload the inference label and artifacts
-            if inference_labels is not None:
-                try:
-                    backend = get_model_store(model_store.lower())
-                    if model_store.lower() == "huggingface":
-                        ensure_package_installed("huggingface_hub")
-                    elif model_store.lower() == "github":
-                        ensure_package_installed("PyGithub", "github")
-                    inference_url = backend.upload(inference_labels, self.id, credentials)
-                    self.ai_model.inference_labels = inference_url
-                    logging.info(f"Inference labels uploaded at: {inference_url}")
-                except Exception as e:
-                    logging.error(f"Model submission failed during inference labels upload: {e}")
-                    return None
-
-            # Upload artifacts
-            if artifacts is not None:
-                try:
-                    backend = get_model_store(model_store.lower())
-                    for artifact in artifacts:
-                        loc = backend.upload(artifact, self.id, credentials)
-                        logging.info(f"Artifact '{artifact}' uploaded at: {loc}")
-                        artifact_locations.append(loc)
-                except Exception as e:
-                    logging.error(f"Model submission failed during artifact upload: {e}")
-                    return None
-
-        # Submit the model card to the Patra server
-        try:
-            submission_payload = json.loads(str(self))
-            headers = {"Content-Type": "application/json"}
-            if token:
-                headers["X-Tapis-Token"] = token
-
-            response = requests.post(
-                f"{patra_server_url}/upload_mc",
-                json=submission_payload,
-                headers=headers
-            )
-            response.raise_for_status()
-            logging.info("Model Card submitted successfully.")
-            return "success"
-        except Exception as e:
-            logging.error(f"Model submission failed during ModelCard submission: {e}")
-            if upload_requested:
-                try:
-                    backend = get_model_store(model_store.lower())
-                    backend.delete_repo(self.id, credentials)
-                    logging.info("Rollback successful after ModelCard submission failure.")
-                except Exception as rollback_err:
-                    logging.error(f"Rollback failed: {rollback_err}. Manual cleanup required.")
-            return None
-
-    def _get_model_id(self, patra_server_url: str, token: str, is_uploading_model: bool) -> str:
+    @classmethod
+    def list_model_cards(cls, server_url: str, token: Optional[str] = None, q: Optional[str] = None,
+                          skip: int = 0, limit: int = 50) -> List[dict]:
         """
-        Retrieves a new model ID from the Patra server based on author, name, and version.
-        If the ID already exists:
-          - If a model is being uploaded (is_uploading_model is True), an error is raised.
-          - If no model is provided (only artifacts or the card), a warning is logged and the existing ID is returned.
+        Lists model cards on the Patra server.
+
+        Args:
+            server_url (str): The URL of the Patra server.
+            token (Optional[str]): The X-Tapis-Token access token (includes private records if provided).
+            q (Optional[str]): Optional substring search on name/author/short_description.
+            skip (int): Number of records to skip.
+            limit (int): Maximum number of records to return (server max: 100).
+
+        Returns:
+            List[dict]: Summaries shaped like {id, uuid, name, categories, author, version,
+            short_description, is_gated, is_private, updated_at}.
         """
-        # Ensure a server URL is provided
-        if not patra_server_url:
-            raise PatraIDGenerationError("No server URL provided for PID generation.")
+        return client.list_model_cards(server_url, token=token, q=q, skip=skip, limit=limit)
 
-        # Attempt to retrieve the model ID from the server
-        try:
-            headers = {"Content-Type": "application/json"}
-            params = {"name": self.name, "version": self.version}
-            if token:
-                headers["X-Tapis-Token"] = token
-            else:
-                params["author"] = self.author
-
-            response = requests.get(
-                f"{patra_server_url.rstrip('/')}/get_model_id",
-                params=params,
-                headers=headers,
-                proxies={"http": None, "https": None},
-                timeout=15
-            )
-            if response.status_code == 409:
-                if is_uploading_model:
-                    raise PatraIDGenerationError(
-                        "Model ID already exists. Please update the model version."
-                    )
-                else:
-                    logging.warning("Model ID exists, but no model is being uploaded; continuing with existing ID.")
-                    existing_data = response.json()
-                    return existing_data.get("pid", "unknown-id")
-            response.raise_for_status()
-            id_data = response.json()
-            return id_data["pid"]
-        except requests.exceptions.ConnectionError:
-            raise PatraIDGenerationError("Patra server is unreachable. Verify if the token is provided and valid.")
-        except requests.exceptions.Timeout:
-            raise PatraIDGenerationError("Patra server connection timed out.")
-        except requests.exceptions.RequestException as req_exc:
-            raise PatraIDGenerationError(f"Request failed: {req_exc}")
-
-    def _get_credentials(self, patra_server_url: str, token: str, model_store: str) -> Dict[str, str]:
-        endpoint = "/get_huggingface_credentials" if model_store.lower() == "huggingface" else "/get_github_credentials"
-        headers = {"Content-Type": "application/json"}
-        if token:
-            headers["X-Tapis-Token"] = token
-
-        response = requests.get(
-            f"{patra_server_url}{endpoint}",
-            headers=headers
-        )
-        response.raise_for_status()
-        return response.json()
-
-    def _serialize_model(self, model, file_format: str) -> str:
-        temp_dir = tempfile.gettempdir()
-        path = os.path.join(temp_dir, f"{self.id}.{file_format}")
-
-        # Lazy imports for torch and tensorflow
-        torch_module = None
-        tf_module = None
-        try:
-            import torch
-            torch_module = torch
-        except ImportError:
-            torch_module = ensure_package_installed("torch")
-        try:
-            import tensorflow as tf_mod
-            tf_module = tf_mod
-        except ImportError:
-            tf_module = ensure_package_installed("tensorflow")
-
-        # If using PyTorch, perform a lazy import of torch.nn as torch_nn
-        if torch_module is not None:
-            try:
-                from torch import nn as torch_nn
-            except ImportError:
-                torch_nn = None
-        else:
-            torch_nn = None
-
-        # PyTorch model branch
-        if torch_module is not None and torch_nn is not None and isinstance(model, torch_nn.Module):
-            # Allow saving state_dict to either "pt" or "h5"
-            if file_format.lower() in ["pt", "h5"]:
-                torch_module.save(model, path)
-            elif file_format.lower() == "onnx":
-                dummy_input = torch_module.randn(1, 3, 224, 224)
-                torch_module.onnx.export(model, dummy_input, path)
-            else:
-                raise Exception(f"Unsupported format for PyTorch models: '{file_format}'")
-        # TensorFlow model branch
-        elif tf_module is not None and isinstance(model, tf_module.keras.Model):
-            if file_format.lower() == "h5":
-                model.save(path, save_format='h5')
-            else:
-                raise Exception("For TensorFlow models, only 'h5' format is supported.")
-        else:
-            raise Exception("Unsupported model type or missing required framework.")
-
-        logging.info("Model serialized successfully.")
-        return path
-
-    @staticmethod
-    def _extract_repository_link(model_upload_location: str, model_store: str) -> str:
+    @classmethod
+    def get_model_card(cls, server_url: str, uuid: str, token: Optional[str] = None) -> dict:
         """
-        Extracts the repository link from the model upload location.
+        Retrieves a single model card by uuid from the Patra server.
+
+        Args:
+            server_url (str): The URL of the Patra server.
+            uuid (str): The model card's uuid.
+            token (Optional[str]): The X-Tapis-Token access token (required for private model cards).
+
+        Returns:
+            dict: The full model card detail, including a nested `ai_model` dict.
         """
-        parsed = urlparse(model_upload_location)
-        if model_store.lower() == "huggingface":
-            repo_path = parsed.path.split('/blob/')[0] if '/blob/' in parsed.path else parsed.path
-        elif model_store.lower() == "github":
-            repo_path = parsed.path.split('/tree/')[0] if '/tree/' in parsed.path else parsed.path
-        else:
-            repo_path = parsed.path
-        return urlunparse((parsed.scheme, parsed.netloc, repo_path, '', '', ''))
+        return client.get_model_card(server_url, uuid, token=token)
 
 
 class ModelCardJSONEncoder(JSONEncoder):
     """
-    Custom JSON Encoder for ModelCard to handle complex objects.
+    Custom JSON Encoder for ModelCard-family dataclasses (ModelCard, AIModel, BiasAnalysis,
+    ExplainabilityAnalysis, Metric, Datasheet, and its nested dataclasses).
 
     Methods:
         default: Serializes non-serializable fields.
     """
 
     def default(self, obj):
-        if isinstance(obj, (ModelCard, Metric, AIModel, ExplainabilityAnalysis, BiasAnalysis)):
+        if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
             return obj.__dict__
         return super().default(obj)

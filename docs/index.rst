@@ -28,9 +28,9 @@ Features
    Produce a structured JSON representation for ingestion into the Patra Knowledge Base.
    Ideal for advanced queries on model selection, provenance, versioning, or auditing.
 
-4. **Flexible Repository Support**
-   Pluggable backends for storing models/artifacts on **Hugging Face** or **GitHub**,
-   unifying the model publishing workflow.
+4. **Datasheets for Datasets**
+   Document a dataset's DataCite-style metadata (titles, creators, subjects, and more)
+   with a ``Datasheet`` and link it to a Model Card via ``training_datasheet_uuid``.
 
 5. **Versioning & Model Relationship Tracking**
    Maintain multiple versions of a model with recognized edges (e.g., ``revisionOf``,
@@ -131,9 +131,6 @@ Validate and Save the Model Card
 
 .. code-block:: python
 
-   # Capture Python package dependencies and versions
-   mc.populate_requirements()
-
    # Verify the model card content against the schema
    mc.validate()
    mc.save(<file_path>)
@@ -141,53 +138,56 @@ Validate and Save the Model Card
 Submit
 ------
 
-When calling ``mc.submit()``, pass the following keyword arguments:
+``submit()`` sends the Model Card's metadata to the Patra server's REST API:
 
 - **patra_server_url (str, required)**
-  Base URL of the Patra Server’s REST API (e.g., ``"https://patra.example.org"``).
-
-- **model (object or filepath, optional)**
-  - A Python object implementing a `.save()` method (e.g., Keras `Model`) — Patra Toolkit will call `model.save(...)` to serialize.
-  - Or, a local file path (e.g., `"./trained_model.pt"`) for an existing saved model.
-  If omitted, only the Model Card JSON is sent.
-
-- **file_format (str, optional)**
-  File extension/format for saving the model. Common values:
-  - `"pt"`   (PyTorch)
-  - `"h5"`   (Keras)
-  - `"onnx"` (ONNX)
-  If you supply `model`, you must also specify `file_format`. Ignored otherwise.
-
-- **model_store (str, optional)**
-  Backend for storing the model and artifacts. Valid values:
-  - `"huggingface"` — Upload to a Hugging Face repository.
-  - `"github"`      — Upload to a GitHub repository under the Patra Server organization.
-  Not used if no model or artifacts are provided.
-
-- **inference_labels (str or list[str], optional)**
-  Path(s) to file(s) containing inference labels (e.g., class names). These are uploaded alongside the model.
-
-- **artifacts (list[str], optional)**
-  List of additional file paths to upload (e.g., plots, data files, metrics). Each will be stored in the same repository.
+  Base URL of the Patra Server (e.g., ``"https://patra.example.org"``).
 
 - **token (str, optional)**
-  A valid TAPIS JWT (JSON Web Token) for authentication.
+  A valid TAPIS JWT (JSON Web Token), sent as the ``X-Tapis-Token`` header.
   - For a public Patra Server, omit this parameter.
-  - For an authenticated server, supplying a valid `token` is mandatory; otherwise, you will get an HTTP 401 Unauthorized error.
+  - For an authenticated server, supplying a valid `token` is mandatory.
 
 .. code-block:: python
 
-   mc.submit(
-       patra_server_url=<patra_server_url>,
-       model=<trained_model>,
-       file_format="pt", # or "h5"
-       model_store="huggingface", # or "github"
-       inference_labels="labels.txt",
-       artifacts=[<artifact1_path>, <artifact2_path>]
-   )
+   result = mc.submit(patra_server_url=<patra_server_url>, token=<tapis_token>)
+   print(mc.uuid)  # server-assigned identifier, also available as result["asset_uuid"]
 
-If a name-version conflict arises, increment ``mc.version``. In case of failure,
-``submit()`` attempts partial rollbacks to avoid orphaned uploads.
+``submit()`` raises ``PatraSubmissionError`` on validation failure or a server/network
+error, and ``PatraModelExistsError`` if an equivalent model card (same name, version,
+author, and short description) already exists on the server.
+
+Building a Datasheet
+---------------------
+
+A ``Datasheet`` documents a dataset and submits the same way a Model Card does:
+
+.. code-block:: python
+
+   from patra_toolkit import Datasheet
+
+   ds = Datasheet(publication_year=2025, version="1.0")
+   ds.add_title("UCI Adult Dataset")
+   ds.add_creator("Becker, B.")
+
+   ds.submit(patra_server_url=<patra_server_url>, token=<tapis_token>)
+
+   mc = ModelCard(name="UCI_Adult_Model", training_datasheet_uuid=ds.uuid)
+
+Listing & Retrieving Model Cards and Datasheets
+-------------------------------------------------
+
+.. code-block:: python
+
+   from patra_toolkit import ModelCard, Datasheet
+
+   ModelCard.list_model_cards(server_url=<patra_server_url>)
+   ModelCard.get_model_card(server_url=<patra_server_url>, uuid=<model_card_uuid>)
+
+   Datasheet.list_datasheets(server_url=<patra_server_url>)
+   Datasheet.get_datasheet(server_url=<patra_server_url>, uuid=<datasheet_uuid>)
+
+Pass ``token=<tapis_token>`` to include private records in list/get results.
 
 Examples
 --------

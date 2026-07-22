@@ -108,12 +108,9 @@ mc.populate_bias(X_test, y_test, predictions, "gender", X_test['sex'], clf)
 mc.populate_xai(X_test, x_columns, model, top_n=10)
 ```
 
-The Model Card is validated against the schema to ensure it meets the required structure and content. After validation, you can save the Model Card to a file in JSON format. 
+The Model Card is validated against the schema to ensure it meets the required structure and content. After validation, you can save the Model Card to a file in JSON format. Only the `name` field is required — every other field is optional.
 
 ```python
-# Capture Python package dependencies and versions
-mc.populate_requirements()
-
 # Verify the model card content against the schema
 mc.validate()
 mc.save(<file_path>)
@@ -121,24 +118,14 @@ mc.save(<file_path>)
 
 ### Submit
 
-The `submit()` method allows you to upload the Model Card, the AI model, and any associated artifacts (like trained models or datasets) to a specified [Patra server](https://github.com/Data-to-Insight-Center/patra-kg).
-
-Patra currently supports uploading models (as ".pt" or ".h5" files) and artifacts to Hugging Face and GitHub. Refer the [official documentation](https://patra-toolkit.readthedocs.io/) for more details.
+The `submit()` method submits the Model Card's metadata to a [Patra server](https://github.com/Data-to-Insight-Center/patra-knowledge-base).
 
 ```python
-mc.submit(
-    patra_server_url=<patra_server_url>,
-    model=ai_model,
-    file_format="pt",
-    model_store="huggingface",
-    artifacts=[<artifact1_path>, <artifact2_path>]
-)
+result = mc.submit(patra_server_url=<patra_server_url>)
+print(mc.uuid)  # the server-assigned identifier, also available as result["asset_uuid"]
 ```
 
-### Persistent Identifier (PID) Generation
-Patra assigns each model a PID in the format `<author_id>-<model_name>-<model_version>`. The PID is generated based on the `name`, `version`, and `author` fields of the Model Card. If a name-version conflict arises, increment the `version` field on the Model Card. In case of failure, `submit()` attempts partial rollbacks to avoid orphaned uploads.
-
-For example, the PID for the above model would be `0009-0009-9817-7042-random_forest-0.1`. This PID can be used to reference the model in the Patra Knowledge Base.
+`submit()` raises `PatraSubmissionError` on validation failure or a server/network error, and `PatraModelExistsError` if an equivalent model card (same name, version, author, and short description) already exists on the server.
 
 ### [Optional] TAPIS Authentication
 
@@ -154,7 +141,41 @@ mc.submit(
     token=tapis_token
 )
 ```
-The `author` field in the Model Card will automatically be set to your TACC username. This ensures that no two models can have the same author, name, and version combination.
+
+### Building a Datasheet
+
+A `Datasheet` documents a dataset (title, creators, subjects, and other DataCite-style metadata) and submits the same way a Model Card does — an alternative to filling in the same fields through the Patra UI. Attach a datasheet's `uuid` to a Model Card's `training_datasheet_uuid` to record what a model was trained on.
+
+```python
+from patra_toolkit import Datasheet
+
+ds = Datasheet(publication_year=2025, version="1.0")
+ds.add_title("UCI Adult Dataset")
+ds.add_creator("Becker, B.")
+ds.add_creator("Kohavi, R.")
+ds.add_description("Predict whether income exceeds $50K/yr based on census data.", "Abstract")
+
+ds.submit(patra_server_url=<patra_server_url>)
+print(ds.uuid)
+
+mc = ModelCard(name="UCI_Adult_Model", training_datasheet_uuid=ds.uuid)
+```
+
+### Listing & Retrieving Model Cards and Datasheets
+
+```python
+from patra_toolkit import ModelCard, Datasheet
+
+# List returns summaries (uuid, name/title, and other summary fields)
+ModelCard.list_model_cards(server_url=<patra_server_url>)
+Datasheet.list_datasheets(server_url=<patra_server_url>)
+
+# Get returns the full record for a single uuid
+ModelCard.get_model_card(server_url=<patra_server_url>, uuid=<model_card_uuid>)
+Datasheet.get_datasheet(server_url=<patra_server_url>, uuid=<datasheet_uuid>)
+```
+
+Pass `token=<tapis_token>` to any of the above to include private records in list/get results.
 
 ## Examples
 

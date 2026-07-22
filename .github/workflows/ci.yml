@@ -12,8 +12,4 @@ jobs:
       - name: Run tests
         run: |
           pip install -r tests/requirements.txt
-          python3 -m unittest tests/test_patra_mc.py
-          python3 -m unittest tests/test_patra_inout_data.py
-          python3 -m unittest tests/test_modelstore_huggingface.py
-          python3 -m unittest tests/test_modelstore_github.py
-          python3 -m unittest tests/test_authenticate.py
+          pytest tests/ -v

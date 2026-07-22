@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Patra Model Card",
   "type": "object",
-   "commonFields": {
+  "commonFields": {
     "urlOrDoi": {
       "oneOf": [
         {
@@ -24,9 +24,9 @@
     }
   },
   "properties": {
-    "id": {
-      "type": "string",
-      "description": "The id of the Model Card"
+    "uuid": {
+      "type": ["string", "null"],
+      "description": "The uuid of the Model Card, assigned upon submission or optionally pre-supplied"
     },
     "name": {
       "type": "string",
@@ -69,10 +69,10 @@
     "foundational_model": {
       "description": "If a foundational model has been used, provide the model ID",
       "type": "string"
-        },
-   "category": {
-    "type": "string",
-    "enum": [
+    },
+    "category": {
+      "type": ["string", "null"],
+      "enum": [
         "classification",
         "regression",
         "clustering",
@@ -100,17 +100,31 @@
         "neural architecture search",
         "sequence modeling",
         "embedding learning",
-        "other"
-    ]
+        "other",
+        null
+      ]
     },
     "documentation": {
       "type": "string",
       "description": "URL for documentation if available"
     },
+    "training_datasheet_uuid": {
+      "type": ["string", "null"],
+      "description": "uuid of the Datasheet used to train the model"
+    },
+    "is_private": {
+      "type": "boolean",
+      "description": "Whether the model card is private"
+    },
+    "is_gated": {
+      "type": "boolean",
+      "description": "Whether the model card is gated"
+    },
     "ai_model": {
       "description": "Description of the AI Model",
       "type": [
-        "object"
+        "object",
+        "null"
       ],
       "properties": {
         "name": {
@@ -142,16 +156,17 @@
           "type": "object"
         },
         "framework": {
-          "type": "string",
+          "type": ["string", "null"],
           "enum": [
             "sklearn",
             "tensorflow",
             "pytorch",
-            "other"
+            "other",
+            null
           ]
         },
         "model_type": {
-          "type": "string",
+          "type": ["string", "null"],
           "enum": [
             "cnn",
             "decision_tree",
@@ -163,7 +178,8 @@
             "random_forest",
             "lstm",
             "gnn",
-            "other"
+            "other",
+            null
           ]
         },
         "test_accuracy": {
@@ -171,27 +187,19 @@
           "type": "number"
         },
         "model_metrics": {
-          "description": "Metrics of the AI Model",
-          "type": "array",
-          "items": {
-            "$ref": "#/fields/metrics"
-          }
+          "description": "Performance metrics of the AI Model",
+          "type": "object"
         },
         "inference_labels": {
-          "type": "string",
-          "description": "Inference label for the AI model"
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Inference labels for the AI model"
         }
       },
       "required": [
-        "name",
-        "version",
-        "description",
-        "owner",
-        "location",
-        "license",
-        "framework",
-        "test_accuracy",
-        "model_type"
+        "name"
       ]
     },
     "bias_analysis": {
@@ -220,28 +228,10 @@
           }
         }
       }
-    },
-"model_requirements": {
-  "type": [
-    "array",
-    "null"
-  ],
-  "items": {
-    "type": "string"
-  }
-}
+    }
   },
   "required": [
-    "name",
-    "version",
-    "short_description",
-    "full_description",
-    "author",
-    "keywords",
-    "input_data",
-    "input_type",
-    "output_data",
-    "ai_model"
+    "name"
   ],
   "fields": {
     "metrics": {
@@ -256,27 +246,6 @@
           "type": "string"
         }
       }
-    }
-  },
-     "commonFields": {
-    "urlOrDoi": {
-      "oneOf": [
-        {
-          "pattern": "^(https?|ftp):\\/\\/[^\\s/$.?#].[\\S]*$",
-          "description": "Must be a valid URL"
-        },
-        {
-          "pattern": "^10\\.\\d{4,9}/[^\\s]+$",
-          "description": "or valid DOI"
-        },
-        {
-          "enum": [""],
-          "description": "or empty"
-        },
-        {
-          "type": "null"
-        }
-      ]
     }
   }
 }
