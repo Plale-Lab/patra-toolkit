@@ -28,6 +28,12 @@ setup(
     ],
     extras_require={
         'xai': ['shap~=0.46.0'],
-        'fairness': ['fairlearn~=0.11.0']
+        'fairness': ['fairlearn~=0.11.0'],
+        'experiments': [
+            'torch>=2.0.0',
+            'torchvision>=0.15.0',
+            'pillow>=9.0.0',
+            'confluent-kafka>=2.0.0',
+        ]
     }
 )

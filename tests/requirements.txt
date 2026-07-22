@@ -3,4 +3,5 @@ jsonschema~=4.18.6
 pyrsistent~=0.19.3
 requests>=2.32.3
 torchvision~=0.21.0
+confluent-kafka>=2.0.0
 pytest
