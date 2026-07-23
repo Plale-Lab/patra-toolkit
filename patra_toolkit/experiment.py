@@ -185,6 +185,7 @@ def run_experiment(
         ckn_topic: str = "oracle-events",
         use_schema_envelope: bool = True,
         token: Optional[str] = None,
+        categories: Optional[List[str]] = None,
 ) -> dict:
     """
     Fetches a Model Card + Datasheet from Patra, downloads the referenced model and sample
@@ -192,7 +193,7 @@ def run_experiment(
 
     Args:
         model_card_uuid (str): uuid of a Model Card already submitted to Patra, with
-            ai_model.location (a downloadable weights URL) and ai_model.inference_labels set.
+            ai_model.location (a downloadable weights URL) set.
         datasheet_uuid (str): uuid of a Datasheet already submitted to Patra, with an
             alternate_identifiers entry of type "URL" pointing at the image source.
         patra_server_url (str): base URL of the Patra server to fetch the model card/datasheet from.
@@ -209,6 +210,12 @@ def run_experiment(
             {"schema": ..., "payload": ...} envelope. Flip to False if a given deployment's
             connector accepts bare JSON instead.
         token (Optional[str]): X-Tapis-Token, if the model card/datasheet are private.
+        categories (Optional[List[str]]): class labels to map prediction indices to. The
+            Patra server's GET /modelcard/{uuid} response does not include ai_model.inference_labels
+            (a read-side API gap, not specific to any one deployment), so this can't reliably be
+            re-derived from the fetched model card -- pass the same list used when building the
+            AIModel before submission (e.g. `weights.meta["categories"]`). Falls back to the
+            fetched model card's ai_model.inference_labels if present, for forward-compatibility.
 
     Returns:
         dict: summary with experiment_id, num_events_produced, the built events, and results_url.
@@ -233,9 +240,12 @@ def run_experiment(
     datasheet = Datasheet.get_datasheet(patra_server_url, datasheet_uuid, token=token)
 
     model_location = model_card["ai_model"]["location"]
-    categories = model_card["ai_model"].get("inference_labels") or []
+    categories = categories or model_card["ai_model"].get("inference_labels") or []
     if not categories:
-        raise ValueError(f"Model card {model_card_uuid} has no ai_model.inference_labels.")
+        raise ValueError(
+            f"No categories provided and model card {model_card_uuid}'s ai_model.inference_labels "
+            "is empty -- pass categories=<list of class labels> explicitly."
+        )
     image_base_url = _extract_image_base_url(datasheet)
 
     logging.info("Connecting to CKN broker at %s", ckn_broker_url)

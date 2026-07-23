@@ -178,6 +178,28 @@ class RunExperimentTestCase(unittest.TestCase):
                 user_id="demo-user",
             )
 
+    @patch("confluent_kafka.admin.AdminClient")
+    @patch("confluent_kafka.Producer")
+    @patch("requests.get", side_effect=_mock_requests_get)
+    @patch("patra_toolkit.client.get_datasheet", return_value=DATASHEET_FIXTURE)
+    @patch("patra_toolkit.client.get_model_card",
+           return_value={"ai_model": {"location": "http://fake-model-host/weights.pth"}})
+    def test_run_experiment_categories_param_overrides_missing_inference_labels(
+            self, mock_get_mc, mock_get_ds, mock_requests_get, mock_producer_cls, mock_admin_cls):
+        # Regression test: GET /modelcard/{uuid} doesn't echo back ai_model.inference_labels
+        # (confirmed against a real deployment), so the model card fixture here omits it
+        # entirely -- run_experiment() must still succeed when categories is passed explicitly.
+        mock_admin_cls.return_value.list_topics.return_value = None
+
+        result = run_experiment(
+            model_card_uuid="mc-uuid", datasheet_uuid="ds-uuid",
+            patra_server_url="http://patra.example", ckn_broker_url="broker.example:443",
+            user_id="demo-user", num_images=1, categories=FIXTURE_CATEGORIES,
+        )
+
+        self.assertEqual(result["num_events_produced"], 1)
+        self.assertIn(result["events"][0]["label"], FIXTURE_CATEGORIES)
+
 
 if __name__ == '__main__':
     unittest.main()
