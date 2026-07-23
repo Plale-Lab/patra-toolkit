@@ -12,6 +12,7 @@ from patra_toolkit.experiment import (
     _envelope,
     _extract_image_base_url,
     _iso_to_epoch_millis,
+    _kafka_client_config,
     run_experiment,
 )
 
@@ -91,6 +92,14 @@ class HelperTestCase(unittest.TestCase):
         self.assertIn("payload", wrapped)
         self.assertIsInstance(wrapped["payload"]["image_receiving_timestamp"], int)
 
+    def test_kafka_client_config_ssl_default(self):
+        config = _kafka_client_config("broker.example:443", use_ssl=True)
+        self.assertEqual(config["security.protocol"], "SSL")
+
+    def test_kafka_client_config_no_ssl(self):
+        config = _kafka_client_config("broker.example:9092", use_ssl=False)
+        self.assertNotIn("security.protocol", config)
+
 
 class RunExperimentTestCase(unittest.TestCase):
 
@@ -131,6 +140,11 @@ class RunExperimentTestCase(unittest.TestCase):
         sent_payload = json.loads(mock_producer.produce.call_args_list[0][0][1])
         self.assertIn("schema", sent_payload)
         self.assertIsInstance(sent_payload["payload"]["image_receiving_timestamp"], int)
+
+        # Default use_ssl=True: the Producer/AdminClient should be configured for SSL --
+        # needed for brokers reached through a TLS-terminating proxy (e.g. Tapis Pods).
+        self.assertEqual(mock_producer_cls.call_args[0][0]["security.protocol"], "SSL")
+        self.assertEqual(mock_admin_cls.call_args[0][0]["security.protocol"], "SSL")
 
     @patch("confluent_kafka.admin.AdminClient")
     @patch("confluent_kafka.Producer")

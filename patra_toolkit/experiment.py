@@ -163,11 +163,22 @@ def _produce_event(producer, topic: str, event: dict, use_schema_envelope: bool)
     producer.poll(0)
 
 
-def _check_broker_reachable(ckn_broker_url: str, timeout: int = 10) -> None:
+def _kafka_client_config(ckn_broker_url: str, use_ssl: bool) -> dict:
+    config = {"bootstrap.servers": ckn_broker_url}
+    if use_ssl:
+        # Brokers reached through a TLS-terminating proxy (e.g. a Tapis Pod's external port,
+        # commonly 443) need SSL at the client even though the broker's own internal listener
+        # config may say PLAINTEXT -- that setting only describes the broker's side of the
+        # connection *after* the proxy's TLS termination, which is invisible to it.
+        config["security.protocol"] = "SSL"
+    return config
+
+
+def _check_broker_reachable(ckn_broker_url: str, use_ssl: bool, timeout: int = 10) -> None:
     from confluent_kafka.admin import AdminClient
 
     try:
-        AdminClient({"bootstrap.servers": ckn_broker_url}).list_topics(timeout=timeout)
+        AdminClient(_kafka_client_config(ckn_broker_url, use_ssl)).list_topics(timeout=timeout)
     except Exception as exc:
         raise ConnectionError(f"Could not reach CKN broker at {ckn_broker_url}: {exc}") from exc
 
@@ -184,6 +195,7 @@ def run_experiment(
         num_images: int = 20,
         ckn_topic: str = "oracle-events",
         use_schema_envelope: bool = True,
+        use_ssl: bool = True,
         token: Optional[str] = None,
         categories: Optional[List[str]] = None,
 ) -> dict:
@@ -209,6 +221,10 @@ def run_experiment(
         use_schema_envelope (bool): whether the target Kafka Connect sink requires the
             {"schema": ..., "payload": ...} envelope. Flip to False if a given deployment's
             connector accepts bare JSON instead.
+        use_ssl (bool): whether to connect to the broker over SSL. Defaults to True since
+            brokers reached through a TLS-terminating proxy (e.g. a Tapis Pod's external port)
+            need it even when the broker's own internal listener is configured as PLAINTEXT.
+            Flip to False for a broker reachable directly, with no TLS-terminating proxy in front.
         token (Optional[str]): X-Tapis-Token, if the model card/datasheet are private.
         categories (Optional[List[str]]): class labels to map prediction indices to. The
             Patra server's GET /modelcard/{uuid} response does not include ai_model.inference_labels
@@ -249,8 +265,8 @@ def run_experiment(
     image_base_url = _extract_image_base_url(datasheet)
 
     logging.info("Connecting to CKN broker at %s", ckn_broker_url)
-    producer = Producer({"bootstrap.servers": ckn_broker_url})
-    _check_broker_reachable(ckn_broker_url)
+    producer = Producer(_kafka_client_config(ckn_broker_url, use_ssl))
+    _check_broker_reachable(ckn_broker_url, use_ssl)
 
     logging.info("Downloading model weights from %s", model_location)
     model = _load_model(_download_bytes(model_location, timeout=60))
