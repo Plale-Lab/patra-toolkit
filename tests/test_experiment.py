@@ -16,7 +16,7 @@ from patra_toolkit.experiment import (
     run_experiment,
 )
 
-# _load_model() always builds a stock torchvision.models.mobilenet_v2(weights=None), whose
+# _load_model() always builds a stock torchvision.models.resnet50(weights=None), whose
 # classifier head defaults to 1000 output classes -- the fixture must match that shape (a real
 # deployment's inference_labels would be the real 1000 ImageNet category names).
 FIXTURE_CATEGORIES = [f"class_{i}" for i in range(1000)]
@@ -34,9 +34,10 @@ DATASHEET_FIXTURE = {
 
 
 def _fake_weights_bytes():
+    # A full pickled model object, matching the real demo checkpoint's format (not a state_dict).
     buf = io.BytesIO()
-    model = torchvision.models.mobilenet_v2(weights=None)
-    torch.save(model.state_dict(), buf)
+    model = torchvision.models.resnet50(weights=None)
+    torch.save(model, buf)
     return buf.getvalue()
 
 

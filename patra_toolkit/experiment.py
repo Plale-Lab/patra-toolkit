@@ -69,8 +69,23 @@ def _load_model(weights_bytes: bytes):
     import torch
     import torchvision
 
-    model = torchvision.models.mobilenet_v2(weights=None)
-    model.load_state_dict(torch.load(io.BytesIO(weights_bytes), map_location="cpu"))
+    # The demo checkpoint is a full pickled model object (torch.save(model, ...)), not a
+    # state_dict -- PyTorch 2.6+ defaults torch.load(weights_only=True), which blocks
+    # unpickling arbitrary classes. Allowlisting exactly the classes resnet50() is built from
+    # (rather than weights_only=False, which would allow unpickling anything) matches PyTorch's
+    # own suggested remediation while keeping the allowlist precise and bounded.
+    torch.serialization.add_safe_globals([
+        torchvision.models.resnet.ResNet,
+        torchvision.models.resnet.Bottleneck,
+        torch.nn.modules.conv.Conv2d,
+        torch.nn.modules.batchnorm.BatchNorm2d,
+        torch.nn.modules.activation.ReLU,
+        torch.nn.modules.pooling.MaxPool2d,
+        torch.nn.modules.pooling.AdaptiveAvgPool2d,
+        torch.nn.modules.linear.Linear,
+        torch.nn.modules.container.Sequential,
+    ])
+    model = torch.load(io.BytesIO(weights_bytes), map_location="cpu", weights_only=True)
     model.eval()
     return model
 
