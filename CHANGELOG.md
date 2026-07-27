@@ -12,6 +12,10 @@
   Patra server.
 - `ModelCard` fields `documentation`, `training_datasheet_uuid`, `is_private`, `is_gated`.
 - `PatraDatasheetExistsError` exception.
+- `run_experiment()`: fetches a Model Card + Datasheet from Patra, runs image-classification
+  inference over sample images, and streams per-image metrics to a CKN Kafka broker. Requires
+  the new `experiments` extra (`pip install patra-toolkit[experiments]`), which pulls in
+  `torch`, `torchvision`, `pillow`, and `confluent-kafka`.
 
 ### Changed
 - `ModelCard.submit()`/`Datasheet.submit()` now target the new backend's
