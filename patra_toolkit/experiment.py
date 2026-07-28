@@ -226,8 +226,7 @@ def run_experiment(
         patra_server_url (str): base URL of the Patra server to fetch the model card/datasheet from.
         ckn_broker_url (str): CKN Kafka broker address, e.g. "cknbroker.pods.icicleai.tapis.io:443".
         user_id (str): must already be registered wherever the events land -- register it first
-            with POST /users (self-service, requires a Tapis token); there's no auto-registration
-            or safe default here.
+            with POST /users; there's no auto-registration or safe default here.
         device_id (str): auto-registers on first use; no setup needed.
         experiment_id (Optional[str]): auto-generated if not provided.
         domain (str): tag applied to every event; must be a domain the Patra Experiments page
