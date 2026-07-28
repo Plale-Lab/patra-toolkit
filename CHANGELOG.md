@@ -1,3 +1,17 @@
+## [0.3.1]
+
+### Fixed
+- Removed the unconditional `numpy>=1.23.5,<2.0.0` pin from `install_requires`. `patra-toolkit`
+  itself doesn't use numpy directly, and the pin was a stale leftover from when `shap`/
+  `fairlearn` were required (they're now optional `xai`/`fairness` extras and, like `pandas`,
+  are numpy-2.x-compatible with no upper bound). In environments that ship numpy 2.x
+  pre-installed (e.g. Google Colab), the pin forced a downgrade to numpy 1.x, breaking ABI
+  compatibility with already-installed packages built against numpy 2.x and raising
+  `ValueError: numpy.dtype size changed, may indicate binary incompatibility` on the next
+  `import pandas`.
+
+---
+
 ## [0.3.0]
 
 > Migrates the toolkit from the legacy Neo4j-backed Patra server to the new PostgreSQL/FastAPI
