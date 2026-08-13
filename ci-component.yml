@@ -1,14 +1,14 @@
 - id: PatraToolkit:0.1.2
   name: Patra Model Card Toolkit
   status: ProductionRelease
-  website: https://github.com/Data-to-Insight-Center/patra-toolkit
+  website: https://github.com/Plale-Lab/patra-toolkit
   description: Toolkit for semi-automated modelcard creation for AI/ML models.
   owner: Beth Plale
   primaryThrust: core/AI4CI
-  sourceCodeUrl: https://github.com/Data-to-Insight-Center/patra-toolkit
+  sourceCodeUrl: https://github.com/Plale-Lab/patra-toolkit
   targetIcicleRelease: 2024-12
   componentVersion: 0.1.2
-  licenseUrl: https://github.com/Data-to-Insight-Center/patra-toolkit/blob/main/LICENSE
+  licenseUrl: https://github.com/Plale-Lab/patra-toolkit/blob/main/LICENSE
   releaseNotesUrl:
   doi: https://doi.org/10.1109/e-Science62913.2024.10678710
   citation: S. Withana and B. Plale, Patra ModelCards':' AI/ML Accountability in the Edge-Cloud Continuum
@@ -19,7 +19,7 @@
   securityReviewConducted: false
   biasAssessmentConducted: false
   usageDocumentationAvailable: true
-  usageDocumentationUrl: https://github.com/Data-to-Insight-Center/patra-toolkit/blob/main/README.md
+  usageDocumentationUrl: https://github.com/Plale-Lab/patra-toolkit/blob/main/README.md
   developerDocumentationAvailable: true
   developerDocumentationUrl: https://patra-toolkit.readthedocs.io/en/latest/
   trainingTutorialsAvailable: false

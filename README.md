@@ -5,10 +5,10 @@
 # Patra Model Cards Toolkit
 
 [![Documentation Status](https://img.shields.io/badge/docs-latest-blue.svg)](https://patra-toolkit.readthedocs.io/en/latest/)
-[![Build Status](https://github.com/Data-to-Insight-Center/patra-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/Data-to-Insight-Center/patra-toolkit/actions)
+[![Build Status](https://github.com/Plale-Lab/patra-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/Plale-Lab/patra-toolkit/actions)
 [![PyPI version](https://badge.fury.io/py/patra-toolkit.svg)](https://pypi.org/project/patra-toolkit/)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Example Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Data-to-Insight-Center/patra-toolkit/blob/main/examples/notebooks/GettingStarted.ipynb)
+[![Example Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Plale-Lab/patra-toolkit/blob/main/examples/notebooks/GettingStarted.ipynb)
 
 </div>
 
@@ -33,7 +33,7 @@ pip install patra-toolkit
 
 #### From GitHub (for the latest development version)
 ```shell
-pip install git+https://github.com/Data-to-Insight-Center/patra-toolkit
+pip install git+https://github.com/Plale-Lab/patra-toolkit
 ```
 
 ## Tutorial
@@ -118,7 +118,7 @@ mc.save(<file_path>)
 
 ### Submit
 
-The `submit()` method submits the Model Card's metadata to a [Patra server](https://github.com/Data-to-Insight-Center/patra-knowledge-base).
+The `submit()` method submits the Model Card's metadata to a [Patra server](https://github.com/Plale-Lab/patra-knowledge-base).
 
 ```python
 result = mc.submit(patra_server_url=<patra_server_url>)

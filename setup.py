@@ -12,7 +12,7 @@ setup(
     packages=['tests', 'patra_toolkit'],
     package_data={'patra_toolkit': ['schema/schema.json']},
     include_package_data=True,
-    url='https://github.com/Data-to-Insight-Center/patra-toolkit.git',
+    url='https://github.com/Plale-Lab/patra-toolkit.git',
     license='BSD-3-Clause',
     author='Data to Insight Center',
     author_email='d2i@iu.edu',
