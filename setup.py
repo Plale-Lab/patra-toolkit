@@ -8,7 +8,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='patra-toolkit',
-    version='0.3.1',
+    version='1.0.0',
     packages=['tests', 'patra_toolkit'],
     package_data={'patra_toolkit': ['schema/schema.json']},
     include_package_data=True,
@@ -23,7 +23,8 @@ setup(
         'jsonschema>4.18.5',
         'pandas>=2.0.0',
         'requests>2.32.2',
-        'setuptools>=65.0.0'        
+        'urllib3>=2.7.0',
+        'setuptools>=65.0.0'
     ],
     extras_require={
         'xai': ['shap~=0.46.0'],
