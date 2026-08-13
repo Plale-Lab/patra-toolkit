@@ -1,3 +1,22 @@
+## [1.0.0]
+
+First stable release. From this release forward the public Python API (`ModelCard`, `AIModel`,
+`Datasheet`, their `submit()`/`validate()`/`save()` methods, and the `list_*`/`get_*`
+classmethods) is covered by semantic versioning: breaking changes require a 2.0.0. No API
+changes since 0.3.1 — this is a stability commitment, not a breaking change.
+
+### Fixed
+- Pinned `urllib3>=2.7.0` (previously unpinned, pulled in transitively via `requests`), closing
+  4 high-severity advisories: redirect header leakage across origins and decompression-bomb
+  safeguard bypasses.
+
+### Changed
+- Repointed `setup.py`'s `url=` and README links from the stale `Data-to-Insight-Center` org to
+  `Plale-Lab`, the canonical home for this release.
+- CI now pins a 3.10/3.11/3.12 Python matrix instead of running on the runner's default Python.
+
+---
+
 ## [0.3.1]
 
 ### Fixed
