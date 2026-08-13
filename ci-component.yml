@@ -1,4 +1,4 @@
-- id: PatraToolkit:0.1.2
+- id: PatraToolkit:1.0.0
   name: Patra Model Card Toolkit
   status: ProductionRelease
   website: https://github.com/Plale-Lab/patra-toolkit
@@ -6,13 +6,13 @@
   owner: Beth Plale
   primaryThrust: core/AI4CI
   sourceCodeUrl: https://github.com/Plale-Lab/patra-toolkit
-  targetIcicleRelease: 2024-12
-  componentVersion: 0.1.2
+  targetIcicleRelease: 2026-08
+  componentVersion: 1.0.0
   licenseUrl: https://github.com/Plale-Lab/patra-toolkit/blob/main/LICENSE
-  releaseNotesUrl:
+  releaseNotesUrl: https://github.com/Plale-Lab/patra-toolkit/releases/tag/v1.0.0
   doi: https://doi.org/10.1109/e-Science62913.2024.10678710
   citation: S. Withana and B. Plale, Patra ModelCards':' AI/ML Accountability in the Edge-Cloud Continuum
-  pypiPackage: patra-toolkit:0.1.2
+  pypiPackage: patra-toolkit:1.0.0
   containerImage:
   codeReviewConducted: true
   testsWritten: true
