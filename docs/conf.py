@@ -5,8 +5,8 @@
 
 # -- Project information -----------------------------------------------------
 project = 'Patra Model Card Toolkit'
-copyright = '2024, Data To Insights Center, Indiana University'
-author = 'Data To Insights Center, Indiana University'
+copyright = '2024, Plale Lab, The University of Oregon'
+author = 'Plale Lab, The University of Oregon'
 release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------

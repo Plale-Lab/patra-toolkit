@@ -200,16 +200,16 @@ the Patra Model Card Toolkit:
 License
 -------
 
-The Patra Model Card toolkit is developed by Indiana University and distributed under the
-BSD 3-Clause License. See ``LICENSE.txt`` for more details.
+The Patra Model Card toolkit is developed by Plale Lab at The University of Oregon and
+distributed under the BSD 3-Clause License. See ``LICENSE`` for more details.
 
 Acknowledgements
 ----------------
 
 This research is funded in part through the National Science Foundation under award
 ``#2112606``, AI Institute for Intelligent CyberInfrastructure with Computational
-Learning in the Environment (ICICLE), and in part through Data to Insight Center at
-Indiana University.
+Learning in the Environment (ICICLE), and in part through Plale Lab at The University
+of Oregon.
 
 Reference
 ---------
