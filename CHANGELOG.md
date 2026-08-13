@@ -1,3 +1,11 @@
+## [Unreleased]
+
+### Added
+- Mocked/deterministic unit tests for `fairlearn_bias.py` and `shap_xai.py` (both previously
+  zero-coverage — real `fairlearn`/`shap` calls against small, hand-verified fixed arrays, not
+  mocked, since this math had never been checked before) and `exceptions.py`. Added
+  `pytest-cov` + `.coveragerc`; CI now reports coverage on every matrix run.
+
 ## [1.0.0]
 
 First stable release. From this release forward the public Python API (`ModelCard`, `AIModel`,

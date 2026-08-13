@@ -26,4 +26,4 @@ jobs:
       - name: Run tests
         run: |
           pip install -r tests/requirements.txt
-          pytest tests/ -v
+          pytest tests/ -v --cov=patra_toolkit --cov-report=term-missing --cov-report=xml
