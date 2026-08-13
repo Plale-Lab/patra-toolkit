@@ -6,6 +6,7 @@ pandas~=2.2.3
 numpy<=2.1.3
 pyrsistent~=0.19.3
 requests>=2.32.3
+urllib3>=2.7.0
 
 # Optional dependencies (install only when needed)
 # For XAI features: pip install shap~=0.46.0
