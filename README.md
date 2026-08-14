@@ -14,29 +14,34 @@
 
 The Patra Toolkit is a component of the Patra ModelCards framework designed to simplify the process of creating and documenting AI/ML models. It provides a structured schema that guides users in providing essential information about their models, including details about the model's purpose, development process, and performance. The toolkit also includes features for semi-automating the capture of key information, such as fairness and explainability metrics, through integrated analysis tools. By reducing the manual effort involved in creating model cards, the Patra Toolkit encourages researchers and developers to adopt best practices for documenting their models, ultimately contributing to greater transparency and accountability in AI/ML development.
 
-**Tag**: CI4AI, PADI
+**Tags:** CI4AI, PADI
 
+For guidance on what Tutorials, How-To Guides, and Explanation content covers, see [Diátaxis](https://diataxis.fr/).
 
-## Explanation
+### License
 
-The Patra Toolkit embeds transparency and governance directly into the training workflow. Integrated scanners collect essential metadata—data sources, fairness metrics, and explainability insights—during model training and then generate a machine‑actionable JSON model card. These cards plug into the Patra Knowledge Base for rich queries on provenance, version history, and auditing. Flexible back‑ends publish models and artifacts to repositories such as Hugging Face or GitHub, automatically recording lineage links to trace every model’s evolution.
+The **Patra Model Cards Toolkit** is copyrighted by **Plale Lab at The University of Oregon** and distributed under the **BSD 3-Clause License**. See the `LICENSE` file for more details.
 
+## References
 
-## How‑To Guide
+- [Documentation](https://patra-toolkit.readthedocs.io/en/latest/)
+- [Schema descriptions](./docs/source/schema_description.md)
+- [Example notebook](./examples/notebooks/GettingStarted.ipynb) and [example ModelCard](./examples/model_cards/tesorflow_adult_nn_MC.json)
+- [Patra Knowledge Base server](https://github.com/Plale-Lab/patra-knowledge-base)
 
-### Installation
+## Acknowledgements
 
-#### From Pip (Recommended)
-```shell
-pip install patra-toolkit
-```
+This work has been funded by grants from the National Science Foundation, and in part through Plale Lab at The University of Oregon.
 
-#### From GitHub (for the latest development version)
-```shell
-pip install git+https://github.com/Plale-Lab/patra-toolkit
-```
+*National Science Foundation (NSF) funded AI institute for Intelligent Cyberinfrastructure with Computational Learning in the Environment (ICICLE) (OAC 2112606)*
 
-## Tutorial
+## Issue reporting
+
+Report issues via [GitHub Issues](https://github.com/Plale-Lab/patra-toolkit/issues).
+
+---
+
+# Tutorials
 
 ### Building a Patra Model Card
 
@@ -177,14 +182,24 @@ Datasheet.get_datasheet(server_url=<patra_server_url>, uuid=<datasheet_uuid>)
 
 Pass `token=<tapis_token>` to any of the above to include private records in list/get results.
 
-## Examples
+---
 
-Explore the [example notebook](./examples/notebooks/GettingStarted.ipynb) and [example ModelCard](./examples/model_cards/tesorflow_adult_nn_MC.json) to learn more about how to use the Patra Model Card Toolkit.
+# How-To Guides
 
-## License
+### Installation
 
-The **Patra Model Cards Toolkit** is copyrighted by **Plale Lab at The University of Oregon** and distributed under the **BSD 3-Clause License**. See the `LICENSE` file for more details.
+#### From Pip (Recommended)
+```shell
+pip install patra-toolkit
+```
 
-## Acknowledgements
+#### From GitHub (for the latest development version)
+```shell
+pip install git+https://github.com/Plale-Lab/patra-toolkit
+```
 
-This work has been funded by grants from the National Science Foundation, including the ICICLE AI Institute (OAC 2112606), and in part through Plale Lab at The University of Oregon.
+---
+
+# Explanation
+
+The Patra Toolkit embeds transparency and governance directly into the training workflow. Integrated scanners collect essential metadata—data sources, fairness metrics, and explainability insights—during model training and then generate a machine‑actionable JSON model card. These cards plug into the Patra Knowledge Base for rich queries on provenance, version history, and auditing. Flexible back‑ends publish models and artifacts to repositories such as Hugging Face or GitHub, automatically recording lineage links to trace every model’s evolution.
