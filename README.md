@@ -132,6 +132,28 @@ print(mc.uuid)  # the server-assigned identifier, also available as result["asse
 
 `submit()` raises `PatraSubmissionError` on validation failure or a server/network error, and `PatraModelExistsError` if an equivalent model card (same name, version, author, and short description) already exists on the server.
 
+#### Hosted Patra servers (Tapis Pods)
+
+Unless you are running Patra locally, point `patra_server_url` at the hosted deployment in the
+ICICLE Tapis tenant:
+
+| Service | URL |
+| ------- | --- |
+| REST API (stable) | `https://patrabackend.pods.icicleai.tapis.io` |
+| REST API (dev) | `https://patrabackend-dev.pods.icicleai.tapis.io` |
+| Patra UI | `https://patra.pods.icicleai.tapis.io` |
+| Tapis tenant | `https://icicleai.tapis.io` |
+
+```python
+PATRA_URL = "https://patrabackend.pods.icicleai.tapis.io"
+
+result = mc.submit(patra_server_url=PATRA_URL, token=tapis_token)
+ModelCard.list_model_cards(server_url=PATRA_URL)
+```
+
+Submitted cards appear in the UI at `https://patra.pods.icicleai.tapis.io`. The stable and dev
+backends share one database, so a submission to either is a submission to production.
+
 ### [Optional] TAPIS Authentication
 
 Patra servers hosted as TAPIS pods require authentication using a JWT (JSON Web Token) for secure access. To generate this token, you must authenticate with your TACC credentials. If you do not already have a TACC account, you can create one at [https://accounts.tacc.utexas.edu/begin](https://accounts.tacc.utexas.edu/begin). Use the Patra `authenticate()` method to obtain an access token for TAPIS-hosted Patra servers:
@@ -142,10 +164,14 @@ mc = ModelCard(...)
 tapis_token = mc.authenticate(username="<your_tacc_username>", password="<your_tacc_password>")
 
 mc.submit(
-    patra_server_url=<tapis_hosted_patra_server_url>,
+    patra_server_url="https://patrabackend.pods.icicleai.tapis.io",
     token=tapis_token
 )
 ```
+
+`authenticate()` requests the token from the ICICLE tenant's OAuth2 endpoint
+(`https://icicleai.tapis.io/v3/oauth2/tokens`). Reads of public records work without a token;
+writes and private records require one.
 
 ### Building a Datasheet
 
