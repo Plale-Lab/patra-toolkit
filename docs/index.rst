@@ -2,7 +2,7 @@
 Patra Model Card Toolkit
 ========================
 
-The Patra Toolkit is a component of the Patra ModelCards framework designed to simplify
+The Patra Toolkit is a component of the Patra AI Cards framework designed to simplify
 the process of creating and documenting AI/ML models. It provides a structured schema
 that guides users in providing essential information about their models, including details
 about the model's purpose, development process, and performance. The toolkit also includes
