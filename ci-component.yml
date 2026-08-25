@@ -1,13 +1,13 @@
-- id: PatraModelCardToolkit:1.0.0
+- id: PatraAICardsToolkit:1.0.0
   owner: Beth Plale
   primaryThrust: core/AI4CI
-  name: Patra Model Card Toolkit
+  name: Patra AI Cards Toolkit
   status: ProductionRelease
   description: Toolkit for semi-automated modelcard creation for AI/ML models.
   componentVersion: 1.0.0
   targetIcicleRelease: "2026-08"
   hasDependentComponents:
-    - related_to: PatraKnowledgeBase:1.0.0
+    - related_to: PatraAICardsKnowledgeBase:1.0.0
       relationship_type: DependsOn
   licenseUrl: https://github.com/Plale-Lab/patra-toolkit?tab=BSD-3-Clause-1-ov-file
   publicAccess: true

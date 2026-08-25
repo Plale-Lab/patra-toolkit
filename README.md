@@ -2,7 +2,7 @@
 
  <img src="docs/logo.png" alt="Patra Toolkit Logo" width="300"/>
 
-# Patra Model Cards Toolkit
+# Patra AI Cards Toolkit
 
 [![Documentation Status](https://img.shields.io/badge/docs-latest-blue.svg)](https://patra-toolkit.readthedocs.io/en/latest/)
 [![Build Status](https://github.com/Plale-Lab/patra-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/Plale-Lab/patra-toolkit/actions)
@@ -20,7 +20,7 @@ For guidance on what Tutorials, How-To Guides, and Explanation content covers, s
 
 ### License
 
-The **Patra Model Cards Toolkit** is copyrighted by **Plale Lab at The University of Oregon** and distributed under the **BSD 3-Clause License**. See the `LICENSE` file for more details.
+The **Patra AI Cards Toolkit** is copyrighted by **Plale Lab at The University of Oregon** and distributed under the **BSD 3-Clause License**. See the `LICENSE` file for more details.
 
 ## References
 
